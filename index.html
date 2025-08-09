@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CPR Lifesaver — v11 (Grand City, Night Mode, Multi-Location, KR/EN)</title>
+<style>
+:root{
+  --bg-deep:#0b0f1c; --bg-sky1:#8ad0ff; --bg-sky2:#3b86ea; --bg-sky3:#183572;
+  --city-near:#1b2957; --city-mid:#233268; --city-far:#2b3b7a; --city-glow:#a3d1ff;
+  --card:#0f152f; --card2:#141c45; --border:#273a8e;
+  --ink:#f5f8ff; --muted:#b8c6ff; --dim:#9fb1f6;
+  --primary:#84baff; --primary2:#b1d1ff;
+  --accent:#ff78a8; --accent2:#ff9abd;
+  --ok:#18d1a6; --warn:#ffc85a; --danger:#ff4d6d;
+  --shadow: 0 18px 54px #0009, inset 0 0 0 1px #ffffff0a;
+}
+body.night{
+  --bg-deep:#070914; --bg-sky1:#3a4e97; --bg-sky2:#1b2960; --bg-sky3:#0a1437;
+  --city-near:#0f183b; --city-mid:#0c1a45; --city-far:#0a1538; --city-glow:#82b6ff;
+  --card:#0c1229; --card2:#0b1024; --border:#1b2a64;
+  --ink:#eef3ff; --muted:#a9b8ff; --dim:#8ea1f2;
+  --primary:#78b6ff; --primary2:#9bc5ff;
+  --accent:#ff78a8; --accent2:#ff98bd;
+  --ok:#17caa1; --warn:#ffc456; --danger:#ff4d6d;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; color:var(--ink);
+  font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  background: radial-gradient(1400px 900px at 65% -20%, var(--bg-sky3) 0%, transparent 60%), var(--bg-deep);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+header{position:sticky; top:0; z-index:80; background:#08112acc; backdrop-filter:blur(10px); border-bottom:1px solid #16255b}
+h1{margin:0; padding:14px 18px; display:flex; align-items:center; gap:12px; font-size:18px; letter-spacing:.2px}
+.badge{font-size:12px; color:var(--dim)}
+.row{margin-left:auto; display:flex; gap:8px; align-items:center}
+.pill{padding:8px 12px; border-radius:999px; border:1px solid #2a47a6; background:linear-gradient(180deg,#0f2157,#0c1a43); color:#eaf0ff; cursor:pointer; box-shadow: var(--shadow)}
+.pill.active{outline:2px solid #3e7cff99}
+select{appearance:none; padding:8px 12px; border-radius:12px; border:1px solid #2a47a6; background:linear-gradient(180deg,#0f2157,#0c1a43); color:#eaf0ff; box-shadow:var(--shadow)}
+main{max-width:1240px; margin:0 auto; padding:20px}
+.grid{display:grid; grid-template-columns:1.2fr 1fr; gap:20px; align-items:start}
+@media (max-width:980px){ .grid{grid-template-columns:1fr} }
+.card,.panel{background:linear-gradient(180deg,var(--card),var(--card2)); border:1px solid var(--border); border-radius:22px; box-shadow:var(--shadow); padding:18px}
+.scene{aspect-ratio:16/9; border-radius:20px; border:1px solid #223783; overflow:hidden; background:#06112a; position:relative}
+.scene svg{width:100%; height:100%; display:block}
+.hud{display:flex; justify-content:space-between; align-items:center; margin:14px 0}
+.chip{background:linear-gradient(180deg,#0b1b49,#09163c); border:1px solid #1f3270; border-radius:14px; padding:9px 12px; box-shadow:var(--shadow); color:#e9f0ff; display:flex; gap:8px; align-items:center}
+.progress{height:12px; border:1px solid #1f3270; border-radius:999px; background:#0b1540; overflow:hidden}
+.progress>div{height:100%; width:0; background:linear-gradient(90deg,var(--primary),var(--primary2))}
+h2{margin:8px 0 6px; font-size:22px}
+.small{font-size:14px; color:var(--muted); line-height:1.6}
+.rule{height:1px; background:#1b2d6a; margin:14px 0}
+.actions{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin:12px 0 6px}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:14px 16px; border-radius:14px; cursor:pointer; font-weight:700; letter-spacing:.2px; background:linear-gradient(180deg,#111f55,#0f1a46); color:#eaf0ff; border:1px solid #27419b; box-shadow: var(--shadow); transition:transform .15s ease}
+.btn:hover{transform:translateY(-1px)} .btn:active{transform:translateY(0)}
+.btn.primary{background:linear-gradient(180deg,var(--primary),#5e9aff); color:#0a1640; border-color:#7fb1ff; text-shadow:0 1px 0 #ffffff80}
+.widget{display:none; margin-top:12px}
+.pulse{width:260px; height:260px; border-radius:50%; margin:2px auto 10px; position:relative; background:radial-gradient(40% 40% at 50% 50%, #ff4d6d28 0%, #ff4d6d10 60%, #0000 80%), linear-gradient(180deg,#0f193f,#0b1534); border:2px solid #2a418c; box-shadow: inset 0 0 100px #ff618533, 0 0 0 1px #ffffff0d, var(--shadow)}
+.beat{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:18px; height:18px; border-radius:50%; background:#ffd0db; box-shadow:0 0 26px #ff86a8, 0 0 60px #ff6d9a66}
+.feedback{text-align:center; font-weight:900; margin:6px 0 2px; letter-spacing:.2px}
+.dial{display:grid; grid-template-columns:repeat(3,92px); gap:10px; justify-content:center}
+.key{width:92px; height:92px; border-radius:14px; border:1px solid #2a449c; background:linear-gradient(180deg,#122260,#0f1a46); display:flex; align-items:center; justify-content:center; font-size:26px; color:#ecf2ff; cursor:pointer; box-shadow:var(--shadow)}
+#dialDisp{text-align:center; font-weight:900; font-size:22px; margin:8px 0}
+.padBoard{display:grid; place-items:center}
+.body{width:360px; height:480px; border-radius:24px; position:relative; overflow:hidden; background: radial-gradient(120px 90px at 52% 22%, #ffd7c4, #f8b59b 65%, #eaa184 95%) no-repeat, radial-gradient(300px 220px at 50% 56%, #ffe0cc 0%, #ffcbb2 55%, #ffb9a3 100%) no-repeat; border:1px solid #f2b9a2; box-shadow:inset 0 80px 140px #00000018, var(--shadow)}
+.torso-shadow{position:absolute; inset:0; pointer-events:none; background: radial-gradient(100px 70px at 50% 32%, #00000010, transparent 70%), radial-gradient(240px 160px at 50% 56%, #00000012, transparent 80%)}
+.target{position:absolute; width:112px; height:86px; border:2px dashed #ff6b8b; border-radius:14px; pointer-events:none; box-shadow:0 0 0 2px #ff6b8b33}
+.pad{position:absolute; width:112px; height:86px; border-radius:14px; background:#fff; border:2px solid #cbd6ff; color:#334; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 10px 22px #0006, 0 0 0 1px #ffffff0d; user-select:none; touch-action:none; background-image:linear-gradient(180deg,#fff,#f4f6ff), radial-gradient(60px 40px at 20% 20%, #ffffffaa, transparent 60%)}
+.pad.snapped{border-color:#1ad3a8; box-shadow:0 0 0 2px #1ad3a866, 0 10px 22px #0006}
+.modal{position:fixed; inset:0; background:#0009; display:none; align-items:center; justify-content:center; z-index:90}
+.modal.show{display:flex}
+.modal .panel{width:min(92vw,980px); max-height:86vh; overflow:auto}
+/* background motion */
+.cloud{animation: drift 38s linear infinite}
+.cloud.slow{animation-duration:60s}
+.cloud.fast{animation-duration:24s}
+@keyframes drift{0%{transform:translateX(-120px)}100%{transform:translateX(920px)}}
+/* car motion (X only; Y via var) */
+.car{ --carY:430px; animation: roll 10s linear infinite; }
+.car.alt{ --carY:412px; animation-duration:12s; animation-delay:2s }
+@keyframes roll{ 0%{ transform:translate(-120px, var(--carY)); } 100%{ transform:translate(920px, var(--carY)); } }
+.sparkle{animation: twinkle 3.2s ease-in-out infinite}
+.sparkle:nth-child(odd){animation-duration:4.4s}
+@keyframes twinkle{0%,100%{opacity:.15}50%{opacity:.8}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="appTitle">CPR Lifesaver — v11
+    <span class="badge" id="build"></span>
+    <div class="row">
+      <select id="location">
+        <option value="plaza">Plaza</option>
+        <option value="crosswalk">Crosswalk</option>
+        <option value="subway">Subway</option>
+      </select>
+      <button id="nightBtn" class="pill" aria-pressed="false">🌙 Night</button>
+      <button id="lang_en" class="pill" aria-pressed="false">EN</button>
+      <button id="lang_ko" class="pill" aria-pressed="false">KO</button>
+    </div>
+  </h1>
+</header>
+
+<main>
+  <div class="grid">
+    <div class="card">
+      <div class="scene"><svg id="svg" viewBox="0 0 800 450" role="img" aria-label="Scene"></svg></div>
+      <div class="hud">
+        <div class="chip"><span id="t_label_time">Time</span> ⏱ <span id="timer">—</span></div>
+        <div class="chip"><span id="t_label_score">Score</span> <span id="score">0</span></div>
+      </div>
+      <div class="progress"><div id="prog"></div></div>
+    </div>
+
+    <div class="panel">
+      <h2 id="title">Title</h2>
+      <div class="small" id="desc">Description</div>
+      <div class="rule"></div>
+
+      <div class="actions" id="actions"></div>
+
+      <!-- Assess -->
+      <div id="wAssess" class="widget">
+        <div class="small" id="t_assess_hint">Hold to check breathing (5s)</div>
+        <button id="holdBtn" class="btn primary">Press & Hold</button>
+        <div class="progress"><div id="holdProg"></div></div>
+      </div>
+
+      <!-- Call -->
+      <div id="wCall" class="widget">
+        <div id="dialDisp">•••</div>
+        <div class="dial" id="dial"></div>
+        <button id="dialCall" class="btn primary" style="margin-top:6px">Call</button>
+      </div>
+
+      <!-- Compression -->
+      <div id="wCompress" class="widget">
+        <div class="pulse"><div class="beat" id="beat"></div></div>
+        <div id="fb" class="feedback">—</div>
+        <button id="tap" class="btn primary">TAP (Space)</button>
+        <div class="small" id="t_comp_hint">Tap to 100–120/min.</div>
+      </div>
+
+      <!-- Pads -->
+      <div id="wPads" class="widget">
+        <div class="small" id="t_pads_hint">Place AED pads (upper-right / lower-left).</div>
+        <div class="padBoard">
+          <div class="body" id="body">
+            <div class="torso-shadow"></div>
+            <div class="target" id="t1" style="left:230px;top:114px"></div>
+            <div class="target" id="t2" style="left:56px;top:270px"></div>
+            <div class="pad" id="pad1" style="left:16px;top:16px">PAD</div>
+            <div class="pad" id="pad2" style="left:238px;top:16px">PAD</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shock -->
+      <div id="wShock" class="widget">
+        <div class="small" id="shockMsg">Analyzing… DO NOT TOUCH</div>
+        <div class="actions" style="grid-template-columns:repeat(2,minmax(180px,1fr))">
+          <button id="clearBtn" class="btn">CLEAR</button>
+          <button id="shockBtn" class="btn primary">SHOCK</button>
+        </div>
+      </div>
+
+      <div class="rule"></div>
+      <div class="small" id="t_disclaimer">Training aid only — not a medical device.</div>
+    </div>
+  </div>
+</main>
+
+<!-- Debrief -->
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="t_debrief">
+  <div class="panel" style="padding:18px">
+    <h2 style="margin:0 0 8px" id="t_debrief">Debrief</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px">
+      <div class="card"><div class="small" id="t_finalscore">Final score (0–100)</div><div style="font-size:32px;font-weight:900" id="sScore">0</div></div>
+      <div class="card"><div class="small" id="t_grade">Grade</div><div style="font-size:32px;font-weight:900" id="sGrade">—</div></div>
+      <div class="card"><div class="small" id="t_compacc">Compression accuracy</div><div style="font-size:32px;font-weight:900" id="sComp">—</div></div>
+      <div class="card"><div class="small" id="t_aedseq">AED sequence</div><div style="font-size:32px;font-weight:900" id="sAED">—</div></div>
+    </div>
+    <div class="small" id="advice" style="margin-top:10px">—</div>
+    <div class="rule"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+      <button class="btn primary" id="restart">Restart</button>
+      <button class="btn" id="close">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* -------- i18n -------- */
+const STR = {
+  en: {
+    appTitle:"CPR Lifesaver — v11", time:"Time", score:"Score",
+    start_title:"Collapse in the city", start_desc:"A person collapses and is not responding.",
+    assess_title:"Not breathing normally", assess_desc:"Perform a 5-second check: look, listen, feel.",
+    assess_hint:"Hold to check breathing (5s)",
+    call_title:"Call 119 (speaker)", call_desc:"Dial 119 and put on speaker.",
+    compress_title:"Compressions", compress_desc:"Tap the beat at 100–120/min.", comp_hint:"Tap to 100–120/min.",
+    pads_title:"AED arrives", pads_desc:"Place pads correctly.", pads_hint:"Place AED pads (upper-right / lower-left).",
+    shock_title:"Analyzing", shock_desc:"Stand clear. Deliver shock when advised.",
+    delay_title:"Delay", delay_desc:"Critical delay reduces survival.",
+    outcome_title:"Outcome", outcome_desc:"You followed the key steps.",
+    choice_check:"Check responsiveness & breathing", choice_run:"Run to look for help", choice_water:"Offer water",
+    next:"Next", start_comp:"Start compressions", cont:"Continue", turn_on_aed:"Turn on AED", resume_comp:"Resume compressions",
+    disclaimer:"Training aid only — not a medical device.", debrief:"Debrief",
+    finalscore:"Final score (0–100)", grade:"Grade", compacc:"Compression accuracy", aedseq:"AED sequence",
+    hold5:"Hold 5s to check breathing.", dial119:"Dial 119 exactly.", do_compress:"Do compressions: tap the beat.",
+    keep_rate:"Keep 100–120/min.", tighter:"Aim for tighter timing (±120ms).",
+    pads_targets:"Place both AED pads on targets.", shock_flow:"CLEAR, then SHOCK promptly when advised.",
+    improve:"Improve: ", great:"Great work. You hit the key elements of HQ-CPR.",
+    clear_done:"CLEAR done — now SHOCK", wait_clear:"Wait for advice, then CLEAR",
+    shock_done:"Shock delivered — resume compressions", clear_first:"CLEAR first",
+    analyzing:"Analyzing… DO NOT TOUCH", shock_advised:"Shock advised — CLEAR then SHOCK",
+    plaza:"Plaza", crosswalk:"Crosswalk", subway:"Subway", night:"Night", day:"Day"
+  },
+  ko: {
+    appTitle:"CPR 라이프세이버 — v11", time:"시간", score:"점수",
+    start_title:"도시에서 쓰러짐", start_desc:"한 사람이 쓰러졌고 반응이 없습니다.",
+    assess_title:"정상 호흡 없음", assess_desc:"5초간 확인: 보고·듣고·느끼기.",
+    assess_hint:"호흡 확인을 5초간 길게 누르세요",
+    call_title:"119 전화 (스피커)", call_desc:"119를 눌러 스피커폰으로 전환.",
+    compress_title:"가슴압박", compress_desc:"분당 100–120 박자에 맞춰 탭.", comp_hint:"분당 100–120 박자에 맞춰 탭.",
+    pads_title:"AED 도착", pads_desc:"패드를 올바르게 부착.", pads_hint:"AED 패드를 우상흉·좌하흉 위치에 부착.",
+    shock_title:"분석 중", shock_desc:"접촉 금지. 지시 시 전기충격.",
+    delay_title:"지연", delay_desc:"치명적 지연은 생존율을 낮춥니다.",
+    outcome_title:"결과", outcome_desc:"핵심 단계를 잘 따랐습니다.",
+    choice_check:"반응/호흡 확인", choice_run:"도움을 찾으러 멀리 감", choice_water:"물 주기",
+    next:"다음", start_comp:"압박 시작", cont:"계속", turn_on_aed:"AED 전원 켜기", resume_comp:"압박 재개",
+    disclaimer:"이 앱은 교육 보조 도구이며 의료기기가 아닙니다.", debrief:"요약",
+    finalscore:"최종 점수 (0–100)", grade:"등급", compacc:"압박 정확도", aedseq:"AED 순서",
+    hold5:"호흡을 5초간 확인하세요.", dial119:"정확히 119를 누르세요.", do_compress:"가슴압박을 시행하세요: 박자에 맞춰 탭.",
+    keep_rate:"100–120/분을 유지.", tighter:"타이밍 오차(±120ms)를 줄이세요.",
+    pads_targets:"두 개의 AED 패드를 목표 위치에 부착.", shock_flow:"지시 후 CLEAR, 이어서 SHOCK를 신속히.",
+    improve:"개선점: ", great:"좋아요! HQ-CPR 핵심을 잘 수행했습니다.",
+    clear_done:"CLEAR 완료 — 이제 SHOCK", wait_clear:"지시를 기다린 뒤 CLEAR",
+    shock_done:"충격 시행 — 압박 재개", clear_first:"먼저 CLEAR",
+    analyzing:"분석 중… 접촉 금지", shock_advised:"충격 필요 — CLEAR 후 SHOCK",
+    plaza:"광장", crosswalk:"횡단보도", subway:"지하철", night:"야간", day:"주간"
+  }
+};
+let LANG = localStorage.getItem('cpr_lang') || ((navigator.language||'en').startsWith('ko')?'ko':'en');
+let NIGHT = localStorage.getItem('cpr_night') === '1';
+let LOC = localStorage.getItem('cpr_loc') || 'plaza';
+
+const $ = id => document.getElementById(id);
+function t(k){ return STR[LANG][k] || k; }
+function setLang(l){ LANG=l; localStorage.setItem('cpr_lang',l); applyLang(); render(); }
+function setNight(v){ NIGHT=v; localStorage.setItem('cpr_night', v? '1':'0'); document.body.classList.toggle('night', v); applyNightBtn(); render(); }
+function setLoc(v){ LOC=v; localStorage.setItem('cpr_loc', v); render(); }
+function applyLang(){
+  $('appTitle').firstChild.nodeValue = t('appTitle') + ' ';
+  $('lang_en').classList.toggle('active', LANG==='en'); $('lang_en').setAttribute('aria-pressed', LANG==='en');
+  $('lang_ko').classList.toggle('active', LANG==='ko'); $('lang_ko').setAttribute('aria-pressed', LANG==='ko');
+  $('t_label_time').textContent=t('time'); $('t_label_score').textContent=t('score');
+  $('t_assess_hint').textContent=t('assess_hint'); $('t_comp_hint').textContent=t('comp_hint'); $('t_pads_hint').textContent=t('pads_hint');
+  $('t_disclaimer').textContent=t('disclaimer'); $('t_debrief').textContent=t('debrief'); $('t_finalscore').textContent=t('finalscore');
+  $('t_grade').textContent=t('grade'); $('t_compacc').textContent=t('compacc'); $('t_aedseq').textContent=t('aedseq');
+  const sel = $('location');
+  sel.options[0].textContent = t('plaza');
+  sel.options[1].textContent = t('crosswalk');
+  sel.options[2].textContent = t('subway');
+  applyNightBtn();
+}
+function applyNightBtn(){
+  $('nightBtn').textContent = NIGHT ? `🌞 ${t('day')}` : `🌙 ${t('night')}`;
+  $('nightBtn').setAttribute('aria-pressed', NIGHT?'true':'false');
+}
+
+/* -------- Background / Scene Pieces -------- */
+function rand(min,max){return Math.random()*(max-min)+min;}
+function starField(){ if(!NIGHT) return ''; const s=[]; for(let i=0;i<90;i++){ const x=rand(0,800).toFixed(1), y=rand(0,240).toFixed(1), w=(Math.random()*2+0.8).toFixed(1); s.push(`<rect class="sparkle" x="${x}" y="${y}" width="${w}" height="${w}" fill="#fff" opacity=".6"/>`);} return `<g>${s.join('')}</g>`;}
+function clouds(){ const c=(x,y,scale,cls='')=>`
+  <g class="cloud ${cls}" transform="translate(${x},${y}) scale(${scale})" opacity=".9">
+    <ellipse cx="0" cy="12" rx="38" ry="18" fill="#ffffff30"/>
+    <ellipse cx="26" cy="8" rx="28" ry="14" fill="#ffffff35"/>
+    <ellipse cx="-24" cy="10" rx="24" ry="12" fill="#ffffff28"/>
+  </g>`; return c(-60,40,1.1,'slow')+c(-180,90,0.9)+c(-320,60,1.25,'fast'); }
+function streetTraffic(){
+  const car=(y,color,cls='')=>`
+    <g class="car ${cls}" style="--carY:${y}px">
+      <rect x="0" y="-10" width="42" height="14" rx="4" fill="${color}"/>
+      <rect x="6" y="-16" width="20" height="10" rx="3" fill="#ffffff44"/>
+      <circle cx="10" cy="4" r="3" fill="#222"/><circle cx="32" cy="4" r="3" fill="#222"/>
+      ${NIGHT?`<rect x="40" y="-6" width="8" height="4" fill="#ffd966" opacity=".95"/>`:`<rect x="-8" y="-6" width="8" height="4" fill="#ff6b6b" opacity=".85"/>`}
+    </g>`;
+  return car(430, NIGHT?'#3d62b8':'#5f85db') + car(412, NIGHT?'#b84d62':'#ff6e8a','alt');
+}
+function skyline(){
+  const windows = (x,y,w,h,c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1.2" fill="${c}" />`;
+  const building = (x,y,w,h,c,r=0) => `<rect x="${x}" y="${y-h}" width="${w}" height="${h}" rx="${r}" fill="${c}" />`;
+  const far = [], mid = [], near = [];
+  for(let i=0;i<22;i++){ const x = i*42 + (i%4)*10, w = 24 + (i%5)*8, h = 70 + (i%5)*16;
+    far.push(building(x, 300, w, h, 'var(--city-far)', 2));
+    for(let r=0;r<3;r++){ if(Math.random()>0.65) continue; const wy = 300-h+10 + r*18; far.push(windows(x+6, wy, 5, 10, NIGHT?'#2a4790':'#3e5fb6')); } }
+  for(let i=0;i<16;i++){ const x = i*55 + 10, w = 34 + (i%3)*12, h = 110 + (i%4)*22;
+    mid.push(building(x, 330, w, h, 'var(--city-mid)', 3));
+    for(let r=0;r<5;r++){ if(Math.random()>0.5) continue; const wy = 330-h+10 + r*20; mid.push(windows(x+8, wy, 7, 12, NIGHT?'#3d61bf':'#5073d6')); } }
+  for(let i=0;i<12;i++){ const x = i*70 + 20, w = 44 + (i%3)*14, h = 150 + (i%4)*30;
+    near.push(building(x, 360, w, h, 'var(--city-near)', 4));
+    for(let r=0;r<6;r++){ if(Math.random()>0.45) continue; const wy = 360-h+10 + r*22; near.push(windows(x+10, wy, 8, 14, NIGHT?'#5a88ff':'#78a0ff')); } }
+  const streetGlow = `
+    <defs>
+      <linearGradient id="roadGlow" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--city-glow)"/><stop offset="1" stop-color="transparent"/>
+      </linearGradient>
+      <linearGradient id="street" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0c1637"/><stop offset="1" stop-color="#09112b"/>
+      </linearGradient>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--bg-sky1)"/>
+        <stop offset="0.55" stop-color="var(--bg-sky2)"/>
+        <stop offset="1" stop-color="var(--bg-sky3)"/>
+      </linearGradient>
+      <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="b"/><feBlend in="SourceGraphic" in2="b" mode="screen"/>
+      </filter>
+    </defs>
+    <rect width="800" height="330" fill="url(#sky)"/>
+    ${starField()}
+    ${clouds()}
+    <g class="far">${far.join('')}</g>
+    <g class="mid">${mid.join('')}</g>
+    <g class="near">${near.join('')}</g>
+    <rect x="0" y="330" width="800" height="8" fill="url(#roadGlow)"/>
+    <rect x="0" y="338" width="800" height="112" fill="url(#street)"/>
+    <g opacity=".4">${Array.from({length:12}).map((_,i)=>`<rect x="${i*70+10}" y="392" width="40" height="4" fill="#ffd85a"/>`).join('')}</g>
+    <rect x="0" y="384" width="800" height="2" fill="#5fd1ff44"/>
+    ${streetTraffic()}
+  `;
+  return streetGlow;
+}
+/* caption bar so text never overlaps scene */
+function caption(msg){
+  return `
+    <g>
+      <rect x="12" y="332" width="776" height="40" rx="10" fill="#0b1538cc" stroke="#243a86"/>
+      <text x="28" y="358" fill="#e9f2ff" font-family="system-ui" font-size="18">${msg}</text>
+    </g>`;
+}
+
+/* -------- ONLY FIXED PART: better lying manikin -------- */
+// Simple head + dome body, anchored to the road top (y=338 from skyline())
+function victimManikin(x){
+  const roadY = 338;              // top of the road in your SVG
+  const bodyW = 200;              // torso width
+  const bodyH = 30;               // torso height (dome height)
+  const left  = x - bodyW/2;
+  const right = x + bodyW/2;
+  const topY  = roadY - bodyH;
+  const headR = 22;
+  const headCx = left - headR - 6;        // head sits just left of the body
+  const headCy = roadY - bodyH/2;
+
+  return `
+    <g>
+      <!-- road shadow -->
+      <ellipse cx="${x}" cy="${roadY-4}" rx="${bodyW*0.6}" ry="12" fill="#0006"/>
+      <!-- dome-shaped body: flat bottom, curved top -->
+      <path d="
+        M ${left} ${roadY}
+        L ${right} ${roadY}
+        L ${right} ${topY}
+        A ${bodyW/2} ${bodyH} 0 0 0 ${left} ${topY}
+        Z"
+        fill="#e6d3b8" stroke="#c6b091" stroke-width="2"/>
+      <!-- head (circle) -->
+      <circle cx="${headCx}" cy="${headCy}" r="${headR}" fill="#e6d3b8" stroke="#c6b091" stroke-width="2"/>
+    </g>
+  `;
+}
+
+function phoneUI(){
+  return `
+    <g>
+      <rect x="560" y="80" width="124" height="230" rx="26" fill="#0d1330" stroke="#2a3e8d" stroke-width="2"/>
+      <rect x="574" y="110" width="96" height="120" rx="12" fill="#13225b" stroke="#2943a2"/>
+      <rect x="602" y="240" width="44" height="44" rx="10" fill="#16235c"/>
+      <text x="622" y="170" fill="#9bffbb" text-anchor="middle" font-family="monospace" font-size="24">119</text>
+    </g>`;
+}
+function plazaDecor(){ return `<g opacity=".9"><rect x="30" y="40" width="180" height="74" rx="12" fill="#0e1740" stroke="#2d44a1"/><text x="120" y="84" fill="#7fe6c8" text-anchor="middle" font-family="monospace" font-size="18">AED</text></g>`;}
+function crosswalkDecor(){ return `
+  <g opacity=".85">
+    <rect x="0" y="390" width="800" height="12" fill="#cdd7ff22"/>
+    <rect x="40" y="370" width="120" height="12" fill="#cdd7ff33"/>
+    <rect x="200" y="370" width="120" height="12" fill="#cdd7ff33"/>
+    <rect x="360" y="370" width="120" height="12" fill="#cdd7ff33"/>
+    <rect x="520" y="370" width="120" height="12" fill="#cdd7ff33"/>
+    <rect x="680" y="370" width="120" height="12" fill="#cdd7ff33"/>
+  </g>`;}
+function subwayDecor(){ return `
+  <g opacity=".9">
+    <rect x="36" y="276" width="728" height="74" rx="8" fill="#0e1440" stroke="#2d3f98"/>
+    <rect x="56" y="286" width="160" height="50" rx="6" fill="#0b102c" stroke="#273a86"/>
+    <rect x="236" y="286" width="160" height="50" rx="6" fill="#0b102c" stroke="#273a86"/>
+    <rect x="416" y="286" width="160" height="50" rx="6" fill="#0b102c" stroke="#273a86"/>
+    <rect x="596" y="286" width="148" height="50" rx="6" fill="#0b102c" stroke="#273a86"/>
+    <text x="110" y="318" fill="#8fb0ff" font-family="system-ui" font-size="14">Line 2</text>
+    <text x="290" y="318" fill="#8fb0ff" font-family="system-ui" font-size="14">Exit 4</text>
+    <text x="472" y="318" fill="#8fb0ff" font-family="system-ui" font-size="14">AED</text>
+    <text x="658" y="318" fill="#8fb0ff" font-family="system-ui" font-size="14">Ticket</text>
+  </g>`;}
+function scene(id){
+  const base = skyline();
+  const deco = LOC==='plaza' ? plazaDecor() : LOC==='crosswalk' ? crosswalkDecor() : subwayDecor();
+
+  if(id==='park_start'){ return base + victimManikin(420,246) + deco + caption(t('start_desc')); }
+  if(id==='assess'){ return base + victimManikin(420,246) + deco + `
+      <g>
+        <rect x="40" y="48" width="300" height="116" rx="14" fill="#0f1f53" stroke="#2d44a1"/>
+        <text x="190" y="92" fill="#cfe6ff" text-anchor="middle" font-size="20">${t('assess_title')}</text>
+        <text x="190" y="118" fill="#cfe6ff" text-anchor="middle" font-size="16">${t('assess_hint')}</text>
+      </g>` + caption(t('assess_desc')); }
+  if(id==='call'){ return base + victimManikin(418,246) + phoneUI() + deco + caption(t('call_desc')); }
+  if(id==='compress'){ return base + victimManikin(420,246) + deco + caption(t('compress_desc')); }
+  if(id==='aed_arrives'){ return base + victimManikin(420,246) + deco + caption(t('pads_desc')); }
+  if(id==='aed_on'){ return base + victimManikin(420,246) + deco + `
+      <g>
+        <rect x="110" y="70" width="246" height="122" rx="14" fill="#0e1f55" stroke="#2e45a5"/>
+        <text x="233" y="120" fill="#cfe6ff" text-anchor="middle" font-family="system-ui" font-size="18">${t('shock_title')}…</text>
+        <polygon points="362,150 404,128 404,172" fill="#ffc657"/>
+      </g>` + caption(t('shock_desc')); }
+  if(id==='timeout_bad'){ return base + caption(t('delay_desc')); }
+  if(id==='end_good'){ return base + caption(t('outcome_desc')); }
+  return base;
+}
+
+/* -------- Flow -------- */
+const SCENES=[
+  {id:'park_start', titleKey:'start_title', descKey:'start_desc', time:12, options:[
+    {txtKey:'choice_check', next:'assess', correct:true},
+    {txtKey:'choice_run', next:'timeout_bad'},
+    {txtKey:'choice_water', next:'timeout_bad'}
+  ]},
+  {id:'assess', titleKey:'assess_title', descKey:'assess_desc', time:12, widget:'wAssess', options:[
+    {txtKey:'next', next:'call', correct:true}
+  ]},
+  {id:'call', titleKey:'call_title', descKey:'call_desc', time:12, widget:'wCall', options:[
+    {txtKey:'start_comp', next:'compress', correct:true}
+  ]},
+  {id:'compress', titleKey:'compress_title', descKey:'compress_desc', time:18, widget:'wCompress', options:[
+    {txtKey:'cont', next:'aed_arrives', correct:true}
+  ]},
+  {id:'aed_arrives', titleKey:'pads_title', descKey:'pads_desc', time:16, widget:'wPads', options:[
+    {txtKey:'turn_on_aed', next:'aed_on', correct:true}
+  ]},
+  {id:'aed_on', titleKey:'shock_title', descKey:'shock_desc', time:14, widget:'wShock', options:[
+    {txtKey:'resume_comp', next:'end_good', correct:true}
+  ]},
+  {id:'timeout_bad', titleKey:'delay_title', descKey:'delay_desc', time:6, options:[{txtKey:'cont', next:'compress'}]},
+  {id:'end_good', titleKey:'outcome_title', descKey:'outcome_desc', time:0, options:[]}
+];
+
+/* -------- Scoring -------- */
+const RUBRIC={assess:15,call:15,comp:40,pads:15,shock:15};
+let M={assessDone:false,callOK:false,comp:{good:0,ok:0,bad:0,avgMs:null,rate:null},padsOK:false,shock:{cleared:false,shocked:false,tAdv:null,tClear:null,tShock:null}};
+function scoreFromMetrics(){
+  let total=0;
+  total += (M.assessDone?1:0)*RUBRIC.assess;
+  total += (M.callOK?1:0)*RUBRIC.call;
+  const taps=M.comp.good+M.comp.ok+M.comp.bad;
+  let compPct=0;
+  if(taps>0){
+    const acc=(M.comp.good + 0.5*M.comp.ok)/taps; compPct=acc;
+    if(M.comp.rate){
+      const r=M.comp.rate;
+      if(r>=100 && r<=120) compPct=Math.min(1, compPct+0.2);
+      else if(r>=90 && r<=130) compPct=Math.max(0, compPct-0.05);
+      else compPct=Math.max(0, compPct-0.2);
+    }
+  }
+  total += compPct*RUBRIC.comp;
+  total += (M.padsOK?1:0)*RUBRIC.pads;
+  let shockPct=0;
+  if(M.shock.cleared && M.shock.shocked && M.shock.tAdv){
+    const tClear=(M.shock.tClear-M.shock.tAdv)/1000;
+    const tShock=(M.shock.tShock-M.shock.tClear)/1000;
+    const fast1=(tClear<2?1:tClear<5?0.7:0.4);
+    const fast2=(tShock<2?1:tShock<5?0.7:0.4);
+    shockPct=0.5*fast1+0.5*fast2;
+  }
+  total += shockPct*RUBRIC.shock;
+  return Math.max(0, Math.min(100, total));
+}
+
+/* -------- State & render -------- */
+let current=SCENES[0].id,tLeft=0,tTick=null;
+function render(){
+  const s=SCENES.find(x=>x.id===current);
+  $('title').textContent=t(s.titleKey); $('desc').textContent=t(s.descKey);
+  $('svg').innerHTML=scene(s.id);
+
+  ['wAssess','wCall','wCompress','wPads','wShock'].forEach(w=>$(w).style.display='none');
+  if(s.widget) $(s.widget).style.display='block';
+
+  const actions=$('actions'); actions.innerHTML='';
+  s.options.forEach(o=>{ const b=document.createElement('button'); b.className='btn'; b.textContent=t(o.txtKey); b.onclick=()=>choose(o); actions.appendChild(b); });
+
+  clearInterval(tTick); tLeft=s.time||0; const idx=SCENES.indexOf(s);
+  if(tLeft>0){
+    $('timer').textContent=tLeft+'s';
+    tTick=setInterval(()=>{ tLeft--; $('timer').textContent=tLeft+'s'; $('prog').style.width=Math.round(((idx+(s.time-tLeft)/s.time)/SCENES.length)*100)+'%';
+      if(tLeft<=0){ clearInterval(tTick); const bad=s.options.find(x=>!x.correct)||s.options[0]; choose(bad); }
+    },1000);
+  } else {
+    $('timer').textContent='—'; $('prog').style.width=Math.round(((idx+1)/SCENES.length)*100)+'%'; if(s.id==='end_good') finalize();
+  }
+
+  if(s.id==='compress') startBeat(); else stopBeat();
+  if(s.id==='aed_on') startAnalyze();
+  $('score').textContent=Math.round(scoreFromMetrics());
+}
+function choose(o){ current=o.next||current; render(); }
+
+/* -------- Mini-games -------- */
+let holdT=null,holding=false,heldMs=0;
+function resetAssess(){ $('holdProg').style.width='0%'; heldMs=0; holding=false; clearInterval(holdT); }
+$('holdBtn').onmousedown=()=>startHold();
+$('holdBtn').ontouchstart=(e)=>{ e.preventDefault(); startHold(); };
+$('holdBtn').onmouseup= $('holdBtn').ontouchend= ()=>stopHold();
+function startHold(){ if(holding) return; holding=true; holdT=setInterval(()=>{ heldMs+=100; $('holdProg').style.width=Math.min(100,Math.round(heldMs/50))+'%'; if(heldMs>=5000){ clearInterval(holdT); holding=false; M.assessDone=true; $('score').textContent=Math.round(scoreFromMetrics()); } },100); }
+function stopHold(){ holding=false; clearInterval(holdT); }
+
+let dialBuf='';
+function resetDial(){ dialBuf=''; $('dialDisp').textContent='•••'; const d=$('dial'); d.innerHTML='';
+['1','2','3','4','5','6','7','8','9','*','0','#'].forEach(n=>{ const k=document.createElement('div'); k.className='key'; k.textContent=n; k.onclick=()=>{ dialBuf+=n; $('dialDisp').textContent=dialBuf; }; d.appendChild(k); }); }
+$('dialCall').onclick=()=>{ M.callOK = (dialBuf.trim()==='119'); $('score').textContent=Math.round(scoreFromMetrics()); };
+
+let running=false,nextBeat=0,beatInt=60000/110,tapTimes=[];
+function startBeat(){ if(running) return; running=true; tapTimes=[]; nextBeat=performance.now()+600; loopBeat(); }
+function stopBeat(){ running=false; }
+function loopBeat(){ if(!running) return; const t=performance.now(); if(t>=nextBeat){ const b=$('beat'); if(b) b.animate([{transform:'translate(-50%,-50%) scale(1)'},{transform:'translate(-50%,-50%) scale(1.35)'}],{duration:140,easing:'ease-out'}); nextBeat+=beatInt; } requestAnimationFrame(loopBeat); }
+function tap(){ if(current!=='compress') return; const t=performance.now(); tapTimes.push(t);
+  const nearest=Math.round((t-(nextBeat-beatInt))/beatInt)*beatInt+(nextBeat-beatInt);
+  const err=t-nearest,abs=Math.abs(err);
+  let color='#ffc657',txt=LANG==='ko'?'빗나감':'OFF';
+  if(abs<=60){ color='var(--ok)'; txt=LANG==='ko'?'아주 좋아요':'GREAT'; M.comp.good++; }
+  else if(abs<=120){ color='#9bd0ff'; txt=LANG==='ko'?'좋아요':'GOOD'; M.comp.ok++; }
+  else { M.comp.bad++; }
+  const total=M.comp.good+M.comp.ok+M.comp.bad; const prev=(M.comp.avgMs||0)*(total-1); M.comp.avgMs=Math.round((prev+abs)/total);
+  $('fb').style.color=color; $('fb').textContent=txt; $('score').textContent=Math.round(scoreFromMetrics());
+}
+$('tap').onclick=tap;
+document.addEventListener('keydown',(e)=>{ if(e.code==='Space'){ e.preventDefault(); tap(); }});
+function compFinalize(){ if(tapTimes.length<2){ M.comp.rate=0; return; } const dt=(tapTimes[tapTimes.length-1]-tapTimes[0])/1000; const beats=tapTimes.length-1; M.comp.rate=Math.round((beats/dt)*60); }
+
+let placed1=false,placed2=false;
+function resetPads(){ placed1=false;placed2=false; M.padsOK=false; const p1=$('pad1'),p2=$('pad2'); p1.style.left='16px';p1.style.top='16px';p2.style.left='238px';p2.style.top='16px'; p1.classList.remove('snapped'); p2.classList.remove('snapped'); }
+;['pad1','pad2'].forEach(id=>{
+  const pad=$(id); let drag=false,ox=0,oy=0,sx=0,sy=0;
+  pad.addEventListener('mousedown',e=>{drag=true;sx=e.clientX;sy=e.clientY;ox=parseInt(pad.style.left);oy=parseInt(pad.style.top);});
+  document.addEventListener('mousemove',e=>{if(!drag) return; pad.style.left=(ox+e.clientX-sx)+'px'; pad.style.top=(oy+e.clientY-sy)+'px';});
+  document.addEventListener('mouseup',()=>{if(!drag) return; drag=false; checkTargets();});
+  pad.addEventListener('touchstart',e=>{drag=true;const t=e.touches[0];sx=t.clientX;sy=t.clientY;ox=parseInt(pad.style.left);oy=parseInt(pad.style.top);},{passive:false});
+  document.addEventListener('touchmove',e=>{if(!drag) return; const t=e.touches[0]; pad.style.left=(ox+t.clientX-sx)+'px'; pad.style.top=(oy+t.clientY-sy)+'px';},{passive:false});
+  document.addEventListener('touchend',()=>{if(!drag) return; drag=false; checkTargets();});
+});
+function rect(el){ const r=el.getBoundingClientRect(); return {x:r.left,y:r.top,w:r.width,h:r.height}; }
+function overlap(a,b){ return !(a.x+a.w<b.x || b.x+b.w<a.x || a.y+a.h<b.y || b.y+b.h<a.y); }
+function snapTo(targetEl, padEl){
+  const tr=targetEl.getBoundingClientRect(), pr=padEl.getBoundingClientRect();
+  const nx = tr.left + (tr.width-pr.width)/2 + window.scrollX;
+  const ny = tr.top  + (tr.height-pr.height)/2 + window.scrollY;
+  padEl.style.left = (nx - padEl.parentElement.getBoundingClientRect().left) + 'px';
+  padEl.style.top  = (ny - padEl.parentElement.getBoundingClientRect().top) + 'px';
+  padEl.classList.add('snapped');
+}
+function checkTargets(){ const t1=$('t1'),t2=$('t2'),p1=$('pad1'),p2=$('pad2');
+  const hit1=overlap(rect(p1),rect(t1)), hit2=overlap(rect(p2),rect(t2));
+  if(hit1){ snapTo(t1,p1); placed1=true; } if(hit2){ snapTo(t2,p2); placed2=true; }
+  M.padsOK=placed1&&placed2; $('score').textContent=Math.round(scoreFromMetrics());
+}
+
+let shockPhase='idle',advTimer=null;
+function startAnalyze(){ shockPhase='analyzing'; M.shock.tAdv=null;M.shock.tClear=null;M.shock.tShock=null; $('shockMsg').textContent=t('analyzing'); clearTimeout(advTimer); advTimer=setTimeout(()=>{ shockPhase='advised'; M.shock.tAdv=performance.now(); $('shockMsg').textContent=t('shock_advised'); }, 2600); }
+$('clearBtn').onclick=()=>{ if(current!=='aed_on') return; if(shockPhase==='advised'){ shockPhase='cleared'; M.shock.cleared=true; M.shock.tClear=performance.now(); $('shockMsg').textContent=t('clear_done'); } else { $('shockMsg').textContent=t('wait_clear'); } $('score').textContent=Math.round(scoreFromMetrics()); };
+$('shockBtn').onclick=()=>{ if(current!=='aed_on') return; if(shockPhase==='cleared'){ shockPhase='shocked'; M.shock.shocked=true; M.shock.tShock=performance.now(); $('shockMsg').textContent=t('shock_done'); } else { $('shockMsg').textContent=t('clear_first'); } $('score').textContent=Math.round(scoreFromMetrics()); };
+
+/* -------- Finalize -------- */
+function finalize(){
+  if(!M.comp.rate) compFinalize();
+  const final=Math.round(scoreFromMetrics());
+  const grade=final>=90?'A':final>=80?'B':final>=70?'C':final>=60?'D':'F';
+  $('sScore').textContent=final; $('sGrade').textContent=grade;
+  const compTxt=(M.comp.avgMs==null?'—':(M.comp.avgMs+'ms avg')) + (M.comp.rate?(' • '+M.comp.rate+'/min'):''); $('sComp').textContent = compTxt || '—';
+  const aedTxt=(M.padsOK?(LANG==='ko'?'패드 OK':'Pads OK'):(LANG==='ko'?'패드 미부착':'Pads off'))+' • '+((M.shock.cleared&&M.shock.shocked)?(LANG==='ko'?'충격 순서 OK':'Shock flow OK'):(LANG==='ko'?'순서 미완료':'Flow incomplete'));
+  $('sAED').textContent=aedTxt;
+  const adv=[]; if(!M.assessDone) adv.push(t('hold5')); if(!M.callOK) adv.push(t('dial119'));
+  const tps=M.comp.good+M.comp.ok+M.comp.bad;
+  if(tps===0) adv.push(t('do_compress')); else { if(!M.comp.rate || M.comp.rate<100 || M.comp.rate>120) adv.push(t('keep_rate')); if(M.comp.avgMs!=null && M.comp.avgMs>120) adv.push(t('tighter')); }
+  if(!M.padsOK) adv.push(t('pads_targets')); if(!(M.shock.cleared && M.shock.shocked)) adv.push(t('shock_flow'));
+  $('advice').textContent = adv.length? (t('improve') + adv.join(' ')) : t('great');
+  document.getElementById('modal').classList.add('show');
+}
+$('restart').onclick=()=>location.reload();
+$('close').onclick=()=>document.getElementById('modal').classList.remove('show');
+
+/* -------- Init -------- */
+document.getElementById('build').textContent=new Date().toISOString().slice(0,10);
+$('lang_en').onclick=()=>setLang('en');
+$('lang_ko').onclick=()=>setLang('ko');
+$('nightBtn').onclick=()=>setNight(!NIGHT);
+$('location').value=LOC;
+$('location').addEventListener('change',e=>setLoc(e.target.value));
+function init(){ document.body.classList.toggle('night', NIGHT); applyLang(); resetAssess(); resetDial(); resetPads(); render(); }
+init();
+</script>
+</body>
+</html>
