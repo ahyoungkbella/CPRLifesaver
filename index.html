@@ -72,12 +72,10 @@ h2{margin:8px 0 6px; font-size:22px}
 .modal{position:fixed; inset:0; background:#0009; display:none; align-items:center; justify-content:center; z-index:90}
 .modal.show{display:flex}
 .modal .panel{width:min(92vw,980px); max-height:86vh; overflow:auto}
-/* background motion */
 .cloud{animation: drift 38s linear infinite}
 .cloud.slow{animation-duration:60s}
 .cloud.fast{animation-duration:24s}
 @keyframes drift{0%{transform:translateX(-120px)}100%{transform:translateX(920px)}}
-/* car motion (X only; Y via var) */
 .car{ --carY:430px; animation: roll 10s linear infinite; }
 .car.alt{ --carY:412px; animation-duration:12s; animation-delay:2s }
 @keyframes roll{ 0%{ transform:translate(-120px, var(--carY)); } 100%{ transform:translate(920px, var(--carY)); } }
@@ -113,7 +111,7 @@ h2{margin:8px 0 6px; font-size:22px}
       </div>
       <div class="progress"><div id="prog"></div></div>
 
-      <!-- Live player counter (persistent) -->
+      <!-- Live player counter -->
       <div class="chip" id="playCounter" style="margin-top:8px">
         <span id="players_label">Players</span>: <span id="players">…</span>
       </div>
@@ -126,21 +124,18 @@ h2{margin:8px 0 6px; font-size:22px}
 
       <div class="actions" id="actions"></div>
 
-      <!-- Assess -->
       <div id="wAssess" class="widget">
         <div class="small" id="t_assess_hint">Hold to check breathing (5s)</div>
         <button id="holdBtn" class="btn primary">Press & Hold</button>
         <div class="progress"><div id="holdProg"></div></div>
       </div>
 
-      <!-- Call -->
       <div id="wCall" class="widget">
         <div id="dialDisp">•••</div>
         <div class="dial" id="dial"></div>
         <button id="dialCall" class="btn primary" style="margin-top:6px">Call</button>
       </div>
 
-      <!-- Compression -->
       <div id="wCompress" class="widget">
         <div class="pulse"><div class="beat" id="beat"></div></div>
         <div id="fb" class="feedback">—</div>
@@ -148,7 +143,6 @@ h2{margin:8px 0 6px; font-size:22px}
         <div class="small" id="t_comp_hint">Tap to 100–120/min.</div>
       </div>
 
-      <!-- Pads -->
       <div id="wPads" class="widget">
         <div class="small" id="t_pads_hint">Place AED pads (upper-right / lower-left).</div>
         <div class="padBoard">
@@ -162,7 +156,6 @@ h2{margin:8px 0 6px; font-size:22px}
         </div>
       </div>
 
-      <!-- Shock -->
       <div id="wShock" class="widget">
         <div class="small" id="shockMsg">Analyzing… DO NOT TOUCH</div>
         <div class="actions" style="grid-template-columns:repeat(2,minmax(180px,1fr))">
@@ -177,7 +170,6 @@ h2{margin:8px 0 6px; font-size:22px}
   </div>
 </main>
 
-<!-- Debrief -->
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="t_debrief">
   <div class="panel" style="padding:18px">
     <h2 style="margin:0 0 8px" id="t_debrief">Debrief</h2>
@@ -272,7 +264,7 @@ function applyLang(){
   sel.options[1].textContent = t('crosswalk');
   sel.options[2].textContent = t('subway');
   applyNightBtn();
-  applyPlayersLabel(); // label for the counter
+  applyPlayersLabel();
 }
 function applyNightBtn(){
   $('nightBtn').textContent = NIGHT ? `🌞 ${t('day')}` : `🌙 ${t('night')}`;
@@ -411,7 +403,6 @@ function subwayDecor(){ return `
 function scene(id){
   const base = skyline();
   const deco = LOC==='plaza' ? plazaDecor() : LOC==='crosswalk' ? crosswalkDecor() : subwayDecor();
-
   if(id==='park_start'){ return base + victimManikin(420,246) + deco + caption(t('start_desc')); }
   if(id==='assess'){ return base + victimManikin(420,246) + deco + `
       <g>
@@ -583,8 +574,8 @@ let shockPhase='idle',advTimer=null;
 function startAnalyze(){ shockPhase='analyzing'; M.shock.tAdv=null;M.shock.tClear=null;M.shock.tShock=null; $('shockMsg').textContent=t('analyzing'); clearTimeout(advTimer); advTimer=setTimeout(()=>{ shockPhase='advised'; M.shock.tAdv=performance.now(); $('shockMsg').textContent=t('shock_advised'); }, 2600); }
 $('clearBtn').onclick=()=>{ if(current!=='aed_on') return; if(shockPhase==='advised'){ shockPhase='cleared'; M.shock.cleared=true; M.shock.tClear=performance.now(); $('shockMsg').textContent=t('clear_done'); } else { $('shockMsg').textContent=t('wait_clear'); } $('score').textContent=Math.round(scoreFromMetrics()); };
 $('shockBtn').onclick=()=>{ if(current!=='aed_on') return; if(shockPhase==='cleared'){ shockPhase='shocked'; M.shock.shocked=true; M.shock.tShock=performance.now(); $('shockMsg').textContent=t('shock_done'); } else { $('shockMsg').textContent=t('clear_first'); } $('score').textContent=Math.round(scoreFromMetrics()); };
-<!-- Player counter (CountAPI, robust create + cache-busting) -->
-<script>
+
+/* -------- Player counter (CountAPI, robust create + cache-busting) -------- */
 const COUNT_NS  = 'ahyoungkbella.github.io';
 const COUNT_KEY = 'CPRLifesaver_totalPlayers_v1';
 const START_VAL = 5940;
@@ -597,7 +588,6 @@ function showPlayers(n){
   const el = document.getElementById('players');
   if (el) el.textContent = (typeof n === 'number' ? n : '—');
 }
-
 async function countapiGet(){
   const url = `https://api.countapi.xyz/get/${encodeURIComponent(COUNT_NS)}/${encodeURIComponent(COUNT_KEY)}?cb=${Date.now()}`;
   const r = await fetch(url, { cache: 'no-store' });
@@ -616,54 +606,35 @@ async function countapiHit(){
   const j = await r.json();
   return { ok: r.ok, json: j, status: r.status };
 }
-
 // Create (if needed) then read
 async function loadPlayers(){
   try{
     let { ok, json, status } = await countapiGet();
-    console.log('[counter] get:', status, json);
-
-    // Not found cases: status 404 OR ok==true but has "error"
     if (!ok || json?.error){
-      console.log('[counter] creating at', START_VAL);
       const cr = await countapiCreate();
-      console.log('[counter] create:', cr.status, cr.json);
       // try get again
       const gr = await countapiGet();
-      console.log('[counter] get(after create):', gr.status, gr.json);
       showPlayers(typeof gr.json?.value === 'number' ? gr.json.value : START_VAL);
       return;
     }
-
     showPlayers(typeof json?.value === 'number' ? json.value : START_VAL);
   }catch(e){
-    console.error('[counter] load error:', e);
     showPlayers(START_VAL);
   }
 }
-
 // Increment globally and update UI
 async function incrementPlayers(){
   try{
-    const { ok, json, status } = await countapiHit();
-    console.log('[counter] hit:', status, json);
+    const { ok, json } = await countapiHit();
     if (ok && typeof json?.value === 'number'){
       showPlayers(json.value);
     } else {
-      // fallback: try reading
       await loadPlayers();
     }
   }catch(e){
-    console.error('[counter] hit error:', e);
     await loadPlayers();
   }
 }
-
-// expose if you want to test manually in console
-window.loadPlayers = loadPlayers;
-window.incrementPlayers = incrementPlayers;
-</script>
-
 
 /* -------- Finalize -------- */
 function finalize(){
@@ -680,7 +651,7 @@ function finalize(){
   if(!M.padsOK) adv.push(t('pads_targets')); if(!(M.shock.cleared && M.shock.shocked)) adv.push(t('shock_flow'));
   $('advice').textContent = adv.length? (t('improve') + adv.join(' ')) : t('great');
 
-  // ✅ increment global total every completed game
+  // increment global total every completed game
   incrementPlayers();
 
   document.getElementById('modal').classList.add('show');
@@ -699,10 +670,10 @@ $('location').addEventListener('change',e=>setLoc(e.target.value));
 function init(){
   document.body.classList.toggle('night', NIGHT);
   applyLang();
-  loadPlayers();     // ← reads/creates counter at 5940 and displays it
+  loadPlayers();   // ← create/read & show total (starts at 5940)
   resetAssess(); resetDial(); resetPads(); render();
 
-  // Optional debug helper (?debug=1)
+  // Optional quick tester (?debug=1)
   if (new URLSearchParams(location.search).get('debug') === '1'){
     const b = document.createElement('button');
     b.textContent = 'DEBUG: +1';
@@ -715,5 +686,6 @@ init();
 </script>
 </body>
 </html>
+
 
 
