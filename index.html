@@ -583,7 +583,7 @@ $('shockBtn').onclick=()=>{ if(current!=='aed_on') return; if(shockPhase==='clea
 (function(){
   const STORAGE_KEY_VAL   = 'cpr_players_value_v2';
   const STORAGE_KEY_TIME  = 'cpr_players_lastTick_v2';
-  const START_VALUE       = 5940;
+  const START_VALUE       = 14967;
   const qs = new URLSearchParams(location.search);
   const FAST = qs.get('fast') === '1';
   const INTERVAL_MS       = FAST ? 5000 : 10*60*1000; // 5s in debug, else 10 minutes
