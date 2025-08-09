@@ -112,6 +112,11 @@ h2{margin:8px 0 6px; font-size:22px}
         <div class="chip"><span id="t_label_score">Score</span> <span id="score">0</span></div>
       </div>
       <div class="progress"><div id="prog"></div></div>
+
+      <!-- Live player counter (persistent) -->
+      <div class="chip" id="playCounter" style="margin-top:8px">
+        <span id="players_label">Players</span>: <span id="players">…</span>
+      </div>
     </div>
 
     <div class="panel">
@@ -216,7 +221,8 @@ const STR = {
     clear_done:"CLEAR done — now SHOCK", wait_clear:"Wait for advice, then CLEAR",
     shock_done:"Shock delivered — resume compressions", clear_first:"CLEAR first",
     analyzing:"Analyzing… DO NOT TOUCH", shock_advised:"Shock advised — CLEAR then SHOCK",
-    plaza:"Plaza", crosswalk:"Crosswalk", subway:"Subway", night:"Night", day:"Day"
+    plaza:"Plaza", crosswalk:"Crosswalk", subway:"Subway", night:"Night", day:"Day",
+    players_label:"Players"
   },
   ko: {
     appTitle:"CPR 라이프세이버 — v11", time:"시간", score:"점수",
@@ -240,7 +246,8 @@ const STR = {
     clear_done:"CLEAR 완료 — 이제 SHOCK", wait_clear:"지시를 기다린 뒤 CLEAR",
     shock_done:"충격 시행 — 압박 재개", clear_first:"먼저 CLEAR",
     analyzing:"분석 중… 접촉 금지", shock_advised:"충격 필요 — CLEAR 후 SHOCK",
-    plaza:"광장", crosswalk:"횡단보도", subway:"지하철", night:"야간", day:"주간"
+    plaza:"광장", crosswalk:"횡단보도", subway:"지하철", night:"야간", day:"주간",
+    players_label:"플레이어 수"
   }
 };
 let LANG = localStorage.getItem('cpr_lang') || ((navigator.language||'en').startsWith('ko')?'ko':'en');
@@ -265,6 +272,7 @@ function applyLang(){
   sel.options[1].textContent = t('crosswalk');
   sel.options[2].textContent = t('subway');
   applyNightBtn();
+  applyPlayersLabel(); // update Players label when language changes
 }
 function applyNightBtn(){
   $('nightBtn').textContent = NIGHT ? `🌞 ${t('day')}` : `🌙 ${t('night')}`;
@@ -334,7 +342,6 @@ function skyline(){
   `;
   return streetGlow;
 }
-/* caption bar so text never overlaps scene */
 function caption(msg){
   return `
     <g>
@@ -343,24 +350,21 @@ function caption(msg){
     </g>`;
 }
 
-/* -------- ONLY FIXED PART: better lying manikin -------- */
-// Simple head + dome body, anchored to the road top (y=338 from skyline())
+/* -------- Manikin -------- */
 function victimManikin(x){
-  const roadY = 338;              // top of the road in your SVG
-  const bodyW = 200;              // torso width
-  const bodyH = 30;               // torso height (dome height)
+  const roadY = 338;
+  const bodyW = 200;
+  const bodyH = 30;
   const left  = x - bodyW/2;
   const right = x + bodyW/2;
   const topY  = roadY - bodyH;
   const headR = 22;
-  const headCx = left - headR - 6;        // head sits just left of the body
+  const headCx = left - headR - 6;
   const headCy = roadY - bodyH/2;
 
   return `
     <g>
-      <!-- road shadow -->
       <ellipse cx="${x}" cy="${roadY-4}" rx="${bodyW*0.6}" ry="12" fill="#0006"/>
-      <!-- dome-shaped body: flat bottom, curved top -->
       <path d="
         M ${left} ${roadY}
         L ${right} ${roadY}
@@ -368,7 +372,6 @@ function victimManikin(x){
         A ${bodyW/2} ${bodyH} 0 0 0 ${left} ${topY}
         Z"
         fill="#e6d3b8" stroke="#c6b091" stroke-width="2"/>
-      <!-- head (circle) -->
       <circle cx="${headCx}" cy="${headCy}" r="${headR}" fill="#e6d3b8" stroke="#c6b091" stroke-width="2"/>
     </g>
   `;
@@ -581,6 +584,44 @@ function startAnalyze(){ shockPhase='analyzing'; M.shock.tAdv=null;M.shock.tClea
 $('clearBtn').onclick=()=>{ if(current!=='aed_on') return; if(shockPhase==='advised'){ shockPhase='cleared'; M.shock.cleared=true; M.shock.tClear=performance.now(); $('shockMsg').textContent=t('clear_done'); } else { $('shockMsg').textContent=t('wait_clear'); } $('score').textContent=Math.round(scoreFromMetrics()); };
 $('shockBtn').onclick=()=>{ if(current!=='aed_on') return; if(shockPhase==='cleared'){ shockPhase='shocked'; M.shock.shocked=true; M.shock.tShock=performance.now(); $('shockMsg').textContent=t('shock_done'); } else { $('shockMsg').textContent=t('clear_first'); } $('score').textContent=Math.round(scoreFromMetrics()); };
 
+/* -------- Player counter (CountAPI, persistent) -------- */
+const COUNT_NS  = 'ahyoungkbella.github.io';
+const COUNT_KEY = 'CPRLifesaver_totalPlayers_v1';
+const START_VAL = 5940;
+
+function applyPlayersLabel(){
+  const label = t('players_label') || 'Players';
+  const labelEl = document.getElementById('players_label');
+  if (labelEl) labelEl.textContent = label;
+}
+function showPlayers(n){
+  const el = $('players');
+  if (el) el.textContent = (typeof n === 'number' ? n : '—');
+}
+async function loadPlayers(){
+  try{
+    let r = await fetch(`https://api.countapi.xyz/get/${encodeURIComponent(COUNT_NS)}/${encodeURIComponent(COUNT_KEY)}`);
+    if (!r.ok){
+      // create the counter at 5940 if it doesn't exist yet
+      await fetch(`https://api.countapi.xyz/create?namespace=${encodeURIComponent(COUNT_NS)}&key=${encodeURIComponent(COUNT_KEY)}&value=${START_VAL}`);
+      r = await fetch(`https://api.countapi.xyz/get/${encodeURIComponent(COUNT_NS)}/${encodeURIComponent(COUNT_KEY)}`);
+    }
+    const data = await r.json();
+    showPlayers((data && typeof data.value === 'number') ? data.value : START_VAL);
+  }catch(e){
+    showPlayers(START_VAL);
+  }
+}
+async function incrementPlayers(){
+  try{
+    const r = await fetch(`https://api.countapi.xyz/hit/${encodeURIComponent(COUNT_NS)}/${encodeURIComponent(COUNT_KEY)}`);
+    const data = await r.json();
+    showPlayers((data && typeof data.value === 'number') ? data.value : '—');
+  }catch(e){
+    // ignore; UI will show last known value
+  }
+}
+
 /* -------- Finalize -------- */
 function finalize(){
   if(!M.comp.rate) compFinalize();
@@ -595,8 +636,13 @@ function finalize(){
   if(tps===0) adv.push(t('do_compress')); else { if(!M.comp.rate || M.comp.rate<100 || M.comp.rate>120) adv.push(t('keep_rate')); if(M.comp.avgMs!=null && M.comp.avgMs>120) adv.push(t('tighter')); }
   if(!M.padsOK) adv.push(t('pads_targets')); if(!(M.shock.cleared && M.shock.shocked)) adv.push(t('shock_flow'));
   $('advice').textContent = adv.length? (t('improve') + adv.join(' ')) : t('great');
+
+  // ✅ Increment the global total EVERY time a play completes
+  incrementPlayers();
+
   document.getElementById('modal').classList.add('show');
 }
+
 $('restart').onclick=()=>location.reload();
 $('close').onclick=()=>document.getElementById('modal').classList.remove('show');
 
@@ -607,7 +653,13 @@ $('lang_ko').onclick=()=>setLang('ko');
 $('nightBtn').onclick=()=>setNight(!NIGHT);
 $('location').value=LOC;
 $('location').addEventListener('change',e=>setLoc(e.target.value));
-function init(){ document.body.classList.toggle('night', NIGHT); applyLang(); resetAssess(); resetDial(); resetPads(); render(); }
+function init(){
+  document.body.classList.toggle('night', NIGHT);
+  applyLang();
+  // load current persistent total (creates at 5940 if missing)
+  loadPlayers();
+  resetAssess(); resetDial(); resetPads(); render();
+}
 init();
 </script>
 </body>
