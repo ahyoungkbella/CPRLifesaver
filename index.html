@@ -583,44 +583,64 @@ let shockPhase='idle',advTimer=null;
 function startAnalyze(){ shockPhase='analyzing'; M.shock.tAdv=null;M.shock.tClear=null;M.shock.tShock=null; $('shockMsg').textContent=t('analyzing'); clearTimeout(advTimer); advTimer=setTimeout(()=>{ shockPhase='advised'; M.shock.tAdv=performance.now(); $('shockMsg').textContent=t('shock_advised'); }, 2600); }
 $('clearBtn').onclick=()=>{ if(current!=='aed_on') return; if(shockPhase==='advised'){ shockPhase='cleared'; M.shock.cleared=true; M.shock.tClear=performance.now(); $('shockMsg').textContent=t('clear_done'); } else { $('shockMsg').textContent=t('wait_clear'); } $('score').textContent=Math.round(scoreFromMetrics()); };
 $('shockBtn').onclick=()=>{ if(current!=='aed_on') return; if(shockPhase==='cleared'){ shockPhase='shocked'; M.shock.shocked=true; M.shock.tShock=performance.now(); $('shockMsg').textContent=t('shock_done'); } else { $('shockMsg').textContent=t('clear_first'); } $('score').textContent=Math.round(scoreFromMetrics()); };
-
-/* -------- Player counter (CountAPI, persistent) -------- */
-const COUNT_NS  = 'ahyoungkbella.github.io';
-const COUNT_KEY = 'CPRLifesaver_totalPlayers_v1';
+<!-- Player counter (CountAPI, persistent & simple key) -->
+<script>
+const COUNT_KEY = 'ahyoungkbella.github.io-CPRLifesaver_totalPlayers_v1'; // single key
 const START_VAL = 5940;
 
 function applyPlayersLabel(){
-  const label = t('players_label') || 'Players';
-  const labelEl = document.getElementById('players_label');
-  if (labelEl) labelEl.textContent = label;
+  const el = document.getElementById('players_label');
+  if (el) el.textContent = (STR?.[LANG]?.players_label) || 'Players';
 }
 function showPlayers(n){
-  const el = $('players');
+  const el = document.getElementById('players');
   if (el) el.textContent = (typeof n === 'number' ? n : '—');
 }
+
+// Ensure counter exists with START_VAL, then read it
 async function loadPlayers(){
   try{
-    let r = await fetch(`https://api.countapi.xyz/get/${encodeURIComponent(COUNT_NS)}/${encodeURIComponent(COUNT_KEY)}`);
+    // Try get
+    let r = await fetch(`https://api.countapi.xyz/get/${encodeURIComponent(COUNT_KEY)}`);
     if (!r.ok){
-      // create the counter at 5940 if it doesn't exist yet
-      await fetch(`https://api.countapi.xyz/create?namespace=${encodeURIComponent(COUNT_NS)}&key=${encodeURIComponent(COUNT_KEY)}&value=${START_VAL}`);
-      r = await fetch(`https://api.countapi.xyz/get/${encodeURIComponent(COUNT_NS)}/${encodeURIComponent(COUNT_KEY)}`);
+      // Create at 5940 if missing
+      await fetch(`https://api.countapi.xyz/create?key=${encodeURIComponent(COUNT_KEY)}&value=${START_VAL}`);
+      r = await fetch(`https://api.countapi.xyz/get/${encodeURIComponent(COUNT_KEY)}`);
     }
     const data = await r.json();
+    console.log('[counter] load:', data);
     showPlayers((data && typeof data.value === 'number') ? data.value : START_VAL);
   }catch(e){
+    console.error('[counter] load error:', e);
     showPlayers(START_VAL);
   }
 }
+
+// Increment + show
 async function incrementPlayers(){
   try{
-    const r = await fetch(`https://api.countapi.xyz/hit/${encodeURIComponent(COUNT_NS)}/${encodeURIComponent(COUNT_KEY)}`);
+    const r = await fetch(`https://api.countapi.xyz/hit/${encodeURIComponent(COUNT_KEY)}`);
     const data = await r.json();
+    console.log('[counter] hit:', data);
     showPlayers((data && typeof data.value === 'number') ? data.value : '—');
   }catch(e){
-    // ignore; UI will show last known value
+    console.error('[counter] hit error:', e);
   }
 }
+
+// Optional: debug button if you add ?debug=1 to the URL
+(function maybeAddDebugBtn(){
+  const params = new URLSearchParams(location.search);
+  if (params.get('debug') === '1'){
+    const b = document.createElement('button');
+    b.textContent = 'DEBUG: +1';
+    b.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:9999';
+    b.onclick = incrementPlayers;
+    document.body.appendChild(b);
+  }
+})();
+</script>
+
 
 /* -------- Finalize -------- */
 function finalize(){
@@ -641,6 +661,7 @@ function finalize(){
   incrementPlayers();
 
   document.getElementById('modal').classList.add('show');
+    
 }
 
 $('restart').onclick=()=>location.reload();
