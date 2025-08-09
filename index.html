@@ -124,18 +124,21 @@ h2{margin:8px 0 6px; font-size:22px}
 
       <div class="actions" id="actions"></div>
 
+      <!-- Assess -->
       <div id="wAssess" class="widget">
         <div class="small" id="t_assess_hint">Hold to check breathing (5s)</div>
         <button id="holdBtn" class="btn primary">Press & Hold</button>
         <div class="progress"><div id="holdProg"></div></div>
       </div>
 
+      <!-- Call -->
       <div id="wCall" class="widget">
         <div id="dialDisp">•••</div>
         <div class="dial" id="dial"></div>
         <button id="dialCall" class="btn primary" style="margin-top:6px">Call</button>
       </div>
 
+      <!-- Compression -->
       <div id="wCompress" class="widget">
         <div class="pulse"><div class="beat" id="beat"></div></div>
         <div id="fb" class="feedback">—</div>
@@ -143,6 +146,7 @@ h2{margin:8px 0 6px; font-size:22px}
         <div class="small" id="t_comp_hint">Tap to 100–120/min.</div>
       </div>
 
+      <!-- Pads -->
       <div id="wPads" class="widget">
         <div class="small" id="t_pads_hint">Place AED pads (upper-right / lower-left).</div>
         <div class="padBoard">
@@ -156,6 +160,7 @@ h2{margin:8px 0 6px; font-size:22px}
         </div>
       </div>
 
+      <!-- Shock -->
       <div id="wShock" class="widget">
         <div class="small" id="shockMsg">Analyzing… DO NOT TOUCH</div>
         <div class="actions" style="grid-template-columns:repeat(2,minmax(180px,1fr))">
@@ -170,6 +175,7 @@ h2{margin:8px 0 6px; font-size:22px}
   </div>
 </main>
 
+<!-- Debrief -->
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="t_debrief">
   <div class="panel" style="padding:18px">
     <h2 style="margin:0 0 8px" id="t_debrief">Debrief</h2>
@@ -264,7 +270,8 @@ function applyLang(){
   sel.options[1].textContent = t('crosswalk');
   sel.options[2].textContent = t('subway');
   applyNightBtn();
-  applyPlayersLabel();
+  // players label
+  const lbl=$('players_label'); if(lbl) lbl.textContent = t('players_label') || 'Players';
 }
 function applyNightBtn(){
   $('nightBtn').textContent = NIGHT ? `🌞 ${t('day')}` : `🌙 ${t('night')}`;
@@ -357,14 +364,11 @@ function victimManikin(x){
   return `
     <g>
       <ellipse cx="${x}" cy="${roadY-4}" rx="${bodyW*0.6}" ry="12" fill="#0006"/>
-      <path d="
-        M ${left} ${roadY}
-        L ${right} ${roadY}
-        L ${right} ${topY}
-        A ${bodyW/2} ${bodyH} 0 0 0 ${left} ${topY}
-        Z"
-        fill="#e6d3b8" stroke="#c6b091" stroke-width="2"/>
-      <circle cx="${headCx}" cy="${headCy}" r="${headR}" fill="#e6d3b8" stroke="#c6b091" stroke-width="2"/>
+      <path d="M ${left} ${roadY} L ${right} ${roadY} L ${right} ${topY}
+               A ${bodyW/2} ${bodyH} 0 0 0 ${left} ${topY} Z"
+            fill="#e6d3b8" stroke="#c6b091" stroke-width="2"/>
+      <circle cx="${headCx}" cy="${headCy}" r="${headR}"
+              fill="#e6d3b8" stroke="#c6b091" stroke-width="2"/>
     </g>
   `;
 }
@@ -575,66 +579,58 @@ function startAnalyze(){ shockPhase='analyzing'; M.shock.tAdv=null;M.shock.tClea
 $('clearBtn').onclick=()=>{ if(current!=='aed_on') return; if(shockPhase==='advised'){ shockPhase='cleared'; M.shock.cleared=true; M.shock.tClear=performance.now(); $('shockMsg').textContent=t('clear_done'); } else { $('shockMsg').textContent=t('wait_clear'); } $('score').textContent=Math.round(scoreFromMetrics()); };
 $('shockBtn').onclick=()=>{ if(current!=='aed_on') return; if(shockPhase==='cleared'){ shockPhase='shocked'; M.shock.shocked=true; M.shock.tShock=performance.now(); $('shockMsg').textContent=t('shock_done'); } else { $('shockMsg').textContent=t('clear_first'); } $('score').textContent=Math.round(scoreFromMetrics()); };
 
-/* -------- Player counter (CountAPI, robust create + cache-busting) -------- */
-const COUNT_NS  = 'ahyoungkbella.github.io';
-const COUNT_KEY = 'CPRLifesaver_totalPlayers_v1';
-const START_VAL = 5940;
+/* -------- Fake-global players counter (persistent per browser) -------- */
+(function(){
+  const STORAGE_KEY_VAL   = 'cpr_players_value_v2';
+  const STORAGE_KEY_TIME  = 'cpr_players_lastTick_v2';
+  const START_VALUE       = 5940;
+  const qs = new URLSearchParams(location.search);
+  const FAST = qs.get('fast') === '1';
+  const INTERVAL_MS       = FAST ? 5000 : 10*60*1000; // 5s in debug, else 10 minutes
+  const STEP_MIN = 1, STEP_MAX = 3;
 
-function applyPlayersLabel(){
-  const labelEl = document.getElementById('players_label');
-  if (labelEl) labelEl.textContent = (STR?.[LANG]?.players_label) || 'Players';
-}
-function showPlayers(n){
   const el = document.getElementById('players');
-  if (el) el.textContent = (typeof n === 'number' ? n : '—');
-}
-async function countapiGet(){
-  const url = `https://api.countapi.xyz/get/${encodeURIComponent(COUNT_NS)}/${encodeURIComponent(COUNT_KEY)}?cb=${Date.now()}`;
-  const r = await fetch(url, { cache: 'no-store' });
-  const j = await r.json();
-  return { ok: r.ok, json: j, status: r.status };
-}
-async function countapiCreate(){
-  const url = `https://api.countapi.xyz/create?namespace=${encodeURIComponent(COUNT_NS)}&key=${encodeURIComponent(COUNT_KEY)}&value=${START_VAL}&cb=${Date.now()}`;
-  const r = await fetch(url, { cache: 'no-store' });
-  const j = await r.json();
-  return { ok: r.ok, json: j, status: r.status };
-}
-async function countapiHit(){
-  const url = `https://api.countapi.xyz/hit/${encodeURIComponent(COUNT_NS)}/${encodeURIComponent(COUNT_KEY)}?cb=${Date.now()}`;
-  const r = await fetch(url, { method: 'POST', cache: 'no-store' });
-  const j = await r.json();
-  return { ok: r.ok, json: j, status: r.status };
-}
-// Create (if needed) then read
-async function loadPlayers(){
-  try{
-    let { ok, json, status } = await countapiGet();
-    if (!ok || json?.error){
-      const cr = await countapiCreate();
-      // try get again
-      const gr = await countapiGet();
-      showPlayers(typeof gr.json?.value === 'number' ? gr.json.value : START_VAL);
-      return;
+  function render(n){ if(el) el.textContent = Number(n).toLocaleString(); }
+
+  // Load
+  let value = parseInt(localStorage.getItem(STORAGE_KEY_VAL) || '', 10);
+  if (isNaN(value)) value = START_VALUE;
+
+  let lastTick = parseInt(localStorage.getItem(STORAGE_KEY_TIME) || '', 10);
+  if (isNaN(lastTick)) lastTick = Date.now();
+
+  // Catch up if time passed while page was closed
+  const now = Date.now();
+  let steps = Math.floor((now - lastTick)/INTERVAL_MS);
+  if (steps > 0){
+    for (let i=0;i<steps;i++){
+      value += Math.floor(Math.random()*(STEP_MAX-STEP_MIN+1))+STEP_MIN;
     }
-    showPlayers(typeof json?.value === 'number' ? json.value : START_VAL);
-  }catch(e){
-    showPlayers(START_VAL);
+    lastTick += steps*INTERVAL_MS;
   }
-}
-// Increment globally and update UI
-async function incrementPlayers(){
-  try{
-    const { ok, json } = await countapiHit();
-    if (ok && typeof json?.value === 'number'){
-      showPlayers(json.value);
-    } else {
-      await loadPlayers();
-    }
-  }catch(e){
-    await loadPlayers();
-  }
-}
+
+  // Save + show
+  localStorage.setItem(STORAGE_KEY_VAL, value);
+  localStorage.setItem(STORAGE_KEY_TIME, lastTick.toString());
+  render(value);
+
+  // Keep incrementing over time
+  setTimeout(function tick(){
+    value += Math.floor(Math.random()*(STEP_MAX-STEP_MIN+1))+STEP_MIN;
+    localStorage.setItem(STORAGE_KEY_VAL, value);
+    localStorage.setItem(STORAGE_KEY_TIME, Date.now().toString());
+    render(value);
+    setTimeout(tick, INTERVAL_MS);
+  }, INTERVAL_MS - ((Date.now()-lastTick)%INTERVAL_MS));
+
+  // Also bump +1 when a game finishes
+  window.bumpPlayersOnFinish = function(){
+    value += 1;
+    localStorage.setItem(STORAGE_KEY_VAL, value);
+    localStorage.setItem(STORAGE_KEY_TIME, Date.now().toString());
+    render(value);
+  };
+})();
 
 /* -------- Finalize -------- */
 function finalize(){
@@ -651,8 +647,8 @@ function finalize(){
   if(!M.padsOK) adv.push(t('pads_targets')); if(!(M.shock.cleared && M.shock.shocked)) adv.push(t('shock_flow'));
   $('advice').textContent = adv.length? (t('improve') + adv.join(' ')) : t('great');
 
-  // increment global total every completed game
-  incrementPlayers();
+  // bump the (fake) global counter when someone finishes a game
+  if (window.bumpPlayersOnFinish) window.bumpPlayersOnFinish();
 
   document.getElementById('modal').classList.add('show');
 }
@@ -670,36 +666,10 @@ $('location').addEventListener('change',e=>setLoc(e.target.value));
 function init(){
   document.body.classList.toggle('night', NIGHT);
   applyLang();
-  loadPlayers();   // ← create/read & show total (starts at 5940)
   resetAssess(); resetDial(); resetPads(); render();
-
-  // Optional quick tester (?debug=1)
-  if (new URLSearchParams(location.search).get('debug') === '1'){
-    const b = document.createElement('button');
-    b.textContent = 'DEBUG: +1';
-    b.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:9999';
-    b.onclick = incrementPlayers;
-    document.body.appendChild(b);
-  }
 }
 init();
 </script>
-  <script>
-let players = 5940; // starting number
-const el = document.getElementById('players');
-
-function updatePlayers() {
-  players += Math.floor(Math.random() * 3) + 1; // +1 to +3
-  el.textContent = players;
-}
-
-// Show starting number
-el.textContent = players;
-
-// Increase every 10 seconds (adjust as you want)
-setInterval(updatePlayers, 10000);
-</script>
-
 </body>
 </html>
 
