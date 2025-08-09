@@ -199,7 +199,7 @@ h2{margin:8px 0 6px; font-size:22px}
 /* -------- i18n -------- */
 const STR = {
   en: {
-    appTitle:"CPR Lifesaver — v11", time:"Time", score:"Score",
+    appTitle:"CPR Lifesaver", time:"Time", score:"Score",
     start_title:"Collapse in the city", start_desc:"A person collapses and is not responding.",
     assess_title:"Not breathing normally", assess_desc:"Perform a 5-second check: look, listen, feel.",
     assess_hint:"Hold to check breathing (5s)",
@@ -246,7 +246,7 @@ const STR = {
     shock_done:"충격 시행 — 압박 재개", clear_first:"먼저 CLEAR",
     analyzing:"분석 중… 접촉 금지", shock_advised:"충격 필요 — CLEAR 후 SHOCK",
     plaza:"광장", crosswalk:"횡단보도", subway:"지하철", night:"야간", day:"주간",
-    players_label:"플레이어 수"
+    players_label:"총 플레이어 수"
   }
 };
 let LANG = localStorage.getItem('cpr_lang') || ((navigator.language||'en').startsWith('ko')?'ko':'en');
