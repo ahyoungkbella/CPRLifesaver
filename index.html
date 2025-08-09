@@ -684,6 +684,22 @@ function init(){
 }
 init();
 </script>
+  <script>
+let players = 5940; // starting number
+const el = document.getElementById('players');
+
+function updatePlayers() {
+  players += Math.floor(Math.random() * 3) + 1; // +1 to +3
+  el.textContent = players;
+}
+
+// Show starting number
+el.textContent = players;
+
+// Increase every 10 seconds (adjust as you want)
+setInterval(updatePlayers, 10000);
+</script>
+
 </body>
 </html>
 
